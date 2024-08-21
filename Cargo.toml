@@ -5,6 +5,9 @@ edition = "2021"
 [[bin]]
 name = "translate"
 path = "src/translate.rs"
+[[bin]]
+name = "translation-service"
+path = "src/translation_service.rs"
 [dependencies]
 anyhow = "1.0.86"
 bindgen_cuda = { version="0.1.5", optional=true }

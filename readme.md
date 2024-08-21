@@ -6,8 +6,15 @@ python tok.py
 
 ### get a translation
 ```bash
-time PATH=$PATH:/usr/local/cuda-12.5/bin/ cargo run --release --features cuda --  --tokenizer tokenizer-marian-base-de.json --tokenizer-dec tokenizer-marian-base-en.json  --text "viele danke"
+time PATH=$PATH:/usr/local/cuda-12.5/bin/ cargo run --release --features cuda --bin translate --  --tokenizer tokenizer-marian-base-de.json --tokenizer-dec tokenizer-marian-base-en.json  --text "viele danke"
 ```
+
+### translation service
+
+```bash
+time PATH=$PATH:/usr/local/cuda-12.5/bin/ cargo run --release --features cuda --bin translation-service --  --tokenizer tokenizer-marian-base-de.json --tokenizer-dec tokenizer-marian-base-en.json
+```
+
 
 ### links to check
 ```bash
