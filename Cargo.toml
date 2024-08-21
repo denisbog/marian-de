@@ -1,0 +1,21 @@
+[package]
+name = "translation"
+version = "0.1.0"
+edition = "2021"
+[[bin]]
+name = "translate"
+path = "src/translate.rs"
+[dependencies]
+anyhow = "1.0.86"
+bindgen_cuda = { version="0.1.5", optional=true }
+candle-core = "0.6.0"
+candle-nn = "0.6.0"
+candle-transformers = "0.6.0"
+clap = { version = "4.5.16", features = ["derive"] }
+hf-hub = "0.3.2"
+serde = "1.0.208"
+serde_json = "1.0.125"
+tokenizers = "0.20.0"
+[features]
+default = []
+cuda = ["candle-core/cuda", "candle-nn/cuda", "candle-transformers/cuda", "dep:bindgen_cuda"]
