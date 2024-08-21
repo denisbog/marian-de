@@ -3,14 +3,12 @@ use clap::{Parser, ValueEnum};
 
 use candle_core::{DType, Tensor};
 use candle_nn::VarBuilder;
-use candle_transformers::models::marian;
 
 use tokenizers::Tokenizer;
 
 #[derive(Clone, Debug, Copy, ValueEnum)]
 enum Which {
     Base,
-    Big,
 }
 
 // TODO: Maybe add support for the conditional prompt.
@@ -26,7 +24,7 @@ struct Args {
     tokenizer_dec: Option<String>,
 
     /// Choose the variant of the model to run.
-    #[arg(long, default_value = "big")]
+    #[arg(long, default_value = "base")]
     which: Which,
 
     /// Run on CPU rather than on GPU.
@@ -43,7 +41,7 @@ struct Args {
 }
 use candle_core::utils::{cuda_is_available, metal_is_available};
 use candle_core::{Device, Result};
-use translation::TokenOutputStream;
+use translation::{marian, TokenOutputStream};
 
 pub fn device(cpu: bool) -> Result<Device> {
     if cpu {
@@ -73,7 +71,6 @@ pub fn main() -> anyhow::Result<()> {
 
     let config = match args.which {
         Which::Base => marian::Config::opus_mt_fr_en(),
-        Which::Big => marian::Config::opus_mt_tc_big_fr_en(),
     };
     let tokenizer = {
         let tokenizer = match args.tokenizer {
@@ -81,7 +78,6 @@ pub fn main() -> anyhow::Result<()> {
             None => {
                 let name = match args.which {
                     Which::Base => "tokenizer-marian-base-fr.json",
-                    Which::Big => "tokenizer-marian-fr.json",
                 };
                 Api::new()?
                     .model("lmz/candle-marian".to_string())
@@ -97,7 +93,6 @@ pub fn main() -> anyhow::Result<()> {
             None => {
                 let name = match args.which {
                     Which::Base => "tokenizer-marian-base-en.json",
-                    Which::Big => "tokenizer-marian-en.json",
                 };
                 Api::new()?
                     .model("lmz/candle-marian".to_string())
@@ -119,9 +114,6 @@ pub fn main() -> anyhow::Result<()> {
                         hf_hub::RepoType::Model,
                         "refs/pr/4".to_string(),
                     ))
-                    .get("model.safetensors")?,
-                Which::Big => Api::new()?
-                    .model("Helsinki-NLP/opus-mt-tc-big-fr-en".to_string())
                     .get("model.safetensors")?,
             },
         };
