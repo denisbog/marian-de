@@ -26,16 +26,16 @@ pub struct Config {
 }
 
 impl Config {
-    // https://huggingface.co/Helsinki-NLP/opus-mt-fr-en/blob/main/config.json
-    pub fn opus_mt_fr_en() -> Self {
+    // https://huggingface.co/Helsinki-NLP/opus-mt-de-en/blob/main/config.json
+    pub fn opus_mt_de_en() -> Self {
         Self {
             activation_function: candle_nn::Activation::Swish,
             d_model: 512,
             decoder_attention_heads: 8,
             decoder_ffn_dim: 2048,
             decoder_layers: 6,
-            decoder_start_token_id: 59513,
-            decoder_vocab_size: Some(59514),
+            decoder_start_token_id: 58100,
+            decoder_vocab_size: Some(58101),
             encoder_attention_heads: 8,
             encoder_ffn_dim: 2048,
             encoder_layers: 6,
@@ -43,11 +43,11 @@ impl Config {
             forced_eos_token_id: 0,
             is_encoder_decoder: true,
             max_position_embeddings: 512,
-            pad_token_id: 59513,
+            pad_token_id: 58100,
             scale_embedding: true,
             share_encoder_decoder_embeddings: true,
             use_cache: true,
-            vocab_size: 59514,
+            vocab_size: 58101,
         }
     }
 }

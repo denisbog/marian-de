@@ -70,14 +70,14 @@ pub fn main() -> anyhow::Result<()> {
     let args = Args::parse();
 
     let config = match args.which {
-        Which::Base => marian::Config::opus_mt_fr_en(),
+        Which::Base => marian::Config::opus_mt_de_en(),
     };
     let tokenizer = {
         let tokenizer = match args.tokenizer {
             Some(tokenizer) => std::path::PathBuf::from(tokenizer),
             None => {
                 let name = match args.which {
-                    Which::Base => "tokenizer-marian-base-fr.json",
+                    Which::Base => "tokenizer-marian-base-de.json",
                 };
                 Api::new()?
                     .model("lmz/candle-marian".to_string())
@@ -110,7 +110,7 @@ pub fn main() -> anyhow::Result<()> {
             None => match args.which {
                 Which::Base => Api::new()?
                     .repo(hf_hub::Repo::with_revision(
-                        "Helsinki-NLP/opus-mt-fr-en".to_string(),
+                        "Helsinki-NLP/opus-mt-de-en".to_string(),
                         hf_hub::RepoType::Model,
                         "refs/pr/4".to_string(),
                     ))
