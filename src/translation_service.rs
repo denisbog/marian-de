@@ -18,14 +18,10 @@ struct Args {
     model: Option<String>,
 
     #[arg(long, default_value = "tokenizer-marian-base-de.json")]
-    tokenizer: Option<String>,
+    tokenizer: String,
 
     #[arg(long, default_value = "tokenizer-marian-base-en.json")]
-    tokenizer_dec: Option<String>,
-
-    /// Choose the variant of the model to run.
-    #[arg(long, default_value = "base")]
-    which: Which,
+    tokenizer_dec: String,
 
     /// Run on CPU rather than on GPU.
     #[arg(long)]
@@ -43,12 +39,6 @@ pub fn device(cpu: bool) -> Result<Device> {
     } else if metal_is_available() {
         Ok(Device::new_metal(0)?)
     } else {
-        #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
-        {
-            println!(
-                "Running on CPU, to run on GPU(metal), build this example with `--features metal`"
-            );
-        }
         #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
         {
             println!("Running on CPU, to run on GPU, build this example with `--features cuda`");
@@ -70,53 +60,26 @@ impl Translator {
     pub fn init(args: Args) -> anyhow::Result<Self> {
         use hf_hub::api::sync::Api;
 
-        let config = match args.which {
-            Which::Base => marian::Config::opus_mt_de_en(),
-        };
-        let tokenizer = {
-            let tokenizer = match args.tokenizer {
-                Some(tokenizer) => std::path::PathBuf::from(tokenizer),
-                None => {
-                    let name = match args.which {
-                        Which::Base => "tokenizer-marian-base-de.json",
-                    };
-                    Api::new()?
-                        .model("lmz/candle-marian".to_string())
-                        .get(name)?
-                }
-            };
-            Tokenizer::from_file(&tokenizer).map_err(E::msg)?
-        };
+        let config = marian::Config::opus_mt_de_en();
 
-        let tokenizer_dec = {
-            let tokenizer = match args.tokenizer_dec {
-                Some(tokenizer) => std::path::PathBuf::from(tokenizer),
-                None => {
-                    let name = match args.which {
-                        Which::Base => "tokenizer-marian-base-en.json",
-                    };
-                    Api::new()?
-                        .model("lmz/candle-marian".to_string())
-                        .get(name)?
-                }
-            };
-            Tokenizer::from_file(&tokenizer).map_err(E::msg)?
-        };
+        let tokenizer =
+            Tokenizer::from_file(&std::path::PathBuf::from(args.tokenizer)).map_err(E::msg)?;
+
+        let tokenizer_dec =
+            Tokenizer::from_file(&std::path::PathBuf::from(args.tokenizer_dec)).map_err(E::msg)?;
         let tokenizer_dec = TokenOutputStream::new(tokenizer_dec);
 
         let device = device(args.cpu)?;
         let vb = {
             let model = match args.model {
                 Some(model) => std::path::PathBuf::from(model),
-                None => match args.which {
-                    Which::Base => Api::new()?
-                        .repo(hf_hub::Repo::with_revision(
-                            "Helsinki-NLP/opus-mt-de-en".to_string(),
-                            hf_hub::RepoType::Model,
-                            "refs/pr/4".to_string(),
-                        ))
-                        .get("model.safetensors")?,
-                },
+                None => Api::new()?
+                    .repo(hf_hub::Repo::with_revision(
+                        "Helsinki-NLP/opus-mt-de-en".to_string(),
+                        hf_hub::RepoType::Model,
+                        "refs/pr/4".to_string(),
+                    ))
+                    .get("model.safetensors")?,
             };
             unsafe { VarBuilder::from_mmaped_safetensors(&[&model], DType::F32, &device)? }
         };
