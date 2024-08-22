@@ -1,17 +1,12 @@
 use anyhow::Error as E;
-use clap::{Parser, ValueEnum};
+use candle_transformers::models::marian;
+use clap::Parser;
 
 use candle_core::{DType, Tensor};
 use candle_nn::VarBuilder;
 
 use tokenizers::Tokenizer;
 
-#[derive(Clone, Debug, Copy, ValueEnum)]
-enum Which {
-    Base,
-}
-
-// TODO: Maybe add support for the conditional prompt.
 #[derive(Parser)]
 struct Args {
     #[arg(long)]
@@ -22,19 +17,13 @@ struct Args {
 
     #[arg(long, default_value = "tokenizer-marian-base-en.json")]
     tokenizer_dec: String,
-
-    /// Run on CPU rather than on GPU.
-    #[arg(long)]
-    cpu: bool,
 }
 use candle_core::utils::{cuda_is_available, metal_is_available};
 use candle_core::{Device, Result};
-use translation::{marian, TokenOutputStream};
+use translation::opus_mt_de_en;
 
-pub fn device(cpu: bool) -> Result<Device> {
-    if cpu {
-        Ok(Device::Cpu)
-    } else if cuda_is_available() {
+pub fn device() -> Result<Device> {
+    if cuda_is_available() {
         Ok(Device::new_cuda(0)?)
     } else if metal_is_available() {
         Ok(Device::new_metal(0)?)
@@ -52,7 +41,7 @@ struct Translator {
     config: marian::Config,
     model: marian::MTModel,
     tokenizer: Tokenizer,
-    tokenizer_dec: TokenOutputStream,
+    tokenizer_dec: Tokenizer,
     logits_processor: candle_transformers::generation::LogitsProcessor,
 }
 
@@ -60,16 +49,15 @@ impl Translator {
     pub fn init(args: Args) -> anyhow::Result<Self> {
         use hf_hub::api::sync::Api;
 
-        let config = marian::Config::opus_mt_de_en();
+        let config = opus_mt_de_en();
 
         let tokenizer =
             Tokenizer::from_file(&std::path::PathBuf::from(args.tokenizer)).map_err(E::msg)?;
 
         let tokenizer_dec =
             Tokenizer::from_file(&std::path::PathBuf::from(args.tokenizer_dec)).map_err(E::msg)?;
-        let tokenizer_dec = TokenOutputStream::new(tokenizer_dec);
 
-        let device = device(args.cpu)?;
+        let device = device()?;
         let vb = {
             let model = match args.model {
                 Some(model) => std::path::PathBuf::from(model),
@@ -112,7 +100,6 @@ impl Translator {
         };
         let mut token_ids = vec![self.config.decoder_start_token_id];
 
-        let mut out: Vec<String> = vec![];
         for index in 0..1000 {
             let context_size = if index >= 1 { 1 } else { token_ids.len() };
             let start_pos = token_ids.len().saturating_sub(context_size);
@@ -122,16 +109,16 @@ impl Translator {
             let logits = logits.get(logits.dim(0)? - 1)?;
             let token = self.logits_processor.sample(&logits)?;
             token_ids.push(token);
-            if let Some(t) = self.tokenizer_dec.next_token(token)? {
-                out.push(t);
-            }
             if token == self.config.eos_token_id || token == self.config.forced_eos_token_id {
                 break;
             }
         }
         self.model.reset_kv_cache();
-        self.tokenizer_dec.clear();
-        Ok(out.join(""))
+        let temp: String = self
+            .tokenizer_dec
+            .decode(&token_ids[1..token_ids.len() - 1], true)
+            .unwrap();
+        Ok(temp)
     }
 }
 

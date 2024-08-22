@@ -1,5 +1,5 @@
 use candle_core::Result;
-pub mod marian;
+use candle_transformers::models::marian::Config;
 /// This is a wrapper around a tokenizer to ensure that tokens can be returned to the user in a
 /// streaming way rather than having to wait for the full decoding.
 pub struct TokenOutputStream {
@@ -9,6 +9,29 @@ pub struct TokenOutputStream {
     current_index: usize,
 }
 
+pub fn opus_mt_de_en() -> Config {
+    Config {
+        activation_function: candle_nn::Activation::Swish,
+        d_model: 512,
+        decoder_attention_heads: 8,
+        decoder_ffn_dim: 2048,
+        decoder_layers: 6,
+        decoder_start_token_id: 58100,
+        decoder_vocab_size: Some(58101),
+        encoder_attention_heads: 8,
+        encoder_ffn_dim: 2048,
+        encoder_layers: 6,
+        eos_token_id: 0,
+        forced_eos_token_id: 0,
+        is_encoder_decoder: true,
+        max_position_embeddings: 512,
+        pad_token_id: 58100,
+        scale_embedding: true,
+        share_encoder_decoder_embeddings: true,
+        use_cache: true,
+        vocab_size: 58101,
+    }
+}
 impl TokenOutputStream {
     pub fn new(tokenizer: tokenizers::Tokenizer) -> Self {
         Self {

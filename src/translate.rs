@@ -1,4 +1,5 @@
 use anyhow::Error as E;
+use candle_transformers::models::marian;
 use clap::{Parser, ValueEnum};
 
 use candle_core::{DType, Tensor};
@@ -41,7 +42,7 @@ struct Args {
 }
 use candle_core::utils::{cuda_is_available, metal_is_available};
 use candle_core::{Device, Result};
-use translation::{marian, TokenOutputStream};
+use translation::TokenOutputStream;
 
 pub fn device(cpu: bool) -> Result<Device> {
     if cpu {
@@ -70,7 +71,7 @@ pub fn main() -> anyhow::Result<()> {
     let args = Args::parse();
 
     let config = match args.which {
-        Which::Base => marian::Config::opus_mt_de_en(),
+        Which::Base => translation::opus_mt_de_en(),
     };
     let tokenizer = {
         let tokenizer = match args.tokenizer {
